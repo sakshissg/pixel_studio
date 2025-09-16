@@ -181,6 +181,8 @@
             cursor: crosshair;
             transition: all 0.1s;
             position: relative;
+            touch-action: none; /* Prevents default touch behaviors */
+            user-select: none; /* Prevents text selection */
         }
 
         .pixel:hover {
@@ -286,6 +288,12 @@
                 <input type="text" id="hexInput" placeholder="#FF0000" maxlength="7">
             </div>
             
+            <div class="control-group">
+                <label for="scaleSlider">Export Scale:</label>
+                <input type="range" id="scaleSlider" min="1" max="10" value="4">
+                <span id="scaleValue">4x</span>
+            </div>
+            
             <button id="eraserBtn">🧹 Eraser</button>
             <button id="clearBtn">🗑️ Clear All</button>
             <button id="downloadBtn">💾 Download PNG</button>
@@ -327,6 +335,7 @@
                 this.currentColor = '#ff0000';
                 this.isDrawing = false;
                 this.isErasing = false;
+                this.scaleFactor = 4;
                 this.grid = document.getElementById('grid');
                 this.pixels = [];
                 this.usedColors = new Set();
@@ -343,6 +352,7 @@
                 this.pixelSizeSlider = document.getElementById('pixelSize');
                 this.colorPicker = document.getElementById('colorPicker');
                 this.hexInput = document.getElementById('hexInput');
+                this.scaleSlider = document.getElementById('scaleSlider');
                 this.eraserBtn = document.getElementById('eraserBtn');
                 this.clearBtn = document.getElementById('clearBtn');
                 this.downloadBtn = document.getElementById('downloadBtn');
@@ -374,6 +384,7 @@
             }
 
             setupPixelEvents(pixel) {
+                // Mouse events for desktop
                 pixel.addEventListener('mousedown', (e) => {
                     e.preventDefault();
                     this.isDrawing = true;
@@ -390,6 +401,29 @@
                     if (this.isDrawing) {
                         this.paintPixel(pixel);
                     }
+                });
+
+                // Touch events for mobile/tablet
+                pixel.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.isDrawing = true;
+                    this.paintPixel(pixel);
+                });
+
+                pixel.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (this.isDrawing) {
+                        const touch = e.touches[0];
+                        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                        if (element && element.classList.contains('pixel')) {
+                            this.paintPixel(element);
+                        }
+                    }
+                });
+
+                pixel.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.isDrawing = false;
                 });
             }
 
@@ -429,6 +463,12 @@
                         pixel.style.height = `${this.pixelSize}px`;
                     });
                     document.getElementById('pixelSizeValue').textContent = `${this.pixelSize}px`;
+                });
+
+                // Scale factor control
+                this.scaleSlider.addEventListener('input', (e) => {
+                    this.scaleFactor = parseInt(e.target.value);
+                    document.getElementById('scaleValue').textContent = `${this.scaleFactor}x`;
                 });
 
                 // Color controls
@@ -482,6 +522,15 @@
                 });
 
                 document.addEventListener('mouseleave', () => {
+                    this.isDrawing = false;
+                });
+
+                // Global touch events for mobile
+                document.addEventListener('touchend', () => {
+                    this.isDrawing = false;
+                });
+
+                document.addEventListener('touchcancel', () => {
                     this.isDrawing = false;
                 });
             }
@@ -561,10 +610,9 @@
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
                 
-                // Make the downloaded image 4x larger
-                const scaleFactor = 4;
-                canvas.width = this.gridSize * scaleFactor;
-                canvas.height = this.gridSize * scaleFactor;
+                // Use the user-selected scale factor
+                canvas.width = this.gridSize * this.scaleFactor;
+                canvas.height = this.gridSize * this.scaleFactor;
                 
                 // Make background transparent
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -573,11 +621,11 @@
                 
                 this.pixels.forEach((pixel, index) => {
                     if (pixel.classList.contains('filled')) {
-                        const x = (index % this.gridSize) * scaleFactor;
-                        const y = Math.floor(index / this.gridSize) * scaleFactor;
+                        const x = (index % this.gridSize) * this.scaleFactor;
+                        const y = Math.floor(index / this.gridSize) * this.scaleFactor;
                         
                         ctx.fillStyle = pixel.style.backgroundColor;
-                        ctx.fillRect(x, y, scaleFactor, scaleFactor);
+                        ctx.fillRect(x, y, this.scaleFactor, this.scaleFactor);
                         hasContent = true;
                     }
                 });
