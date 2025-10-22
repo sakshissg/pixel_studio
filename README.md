@@ -2,6 +2,12 @@
 
 A free, web-based pixel art drawing tool that allows you to create beautiful pixel artwork with ease. No more limitations of Excel - draw freely in any direction with full diagonal support!
 
+### Draw Now
+
+**[Launch Studio →](https://sakshissg.github.io/pixel_studio)**
+
+> Click on the above link to start drawing
+
 ## ✨ Features
 
 ### 🖌️ Drawing Tools
